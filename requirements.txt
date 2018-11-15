@@ -1,0 +1,14 @@
+ipykernel
+jupyter
+matplotlib
+numpy
+scipy
+sklearn
+keras
+pandas
+Pillow
+opencv-python
+bleach==1.5.0
+tensorflow-gpu==1.8
+torchvision
+jupyterlab
