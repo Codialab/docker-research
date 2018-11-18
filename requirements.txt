@@ -9,6 +9,6 @@ pandas
 Pillow
 opencv-python
 bleach==1.5.0
-tensorflow-gpu==1.8
+tensorflow-gpu
 torchvision
 jupyterlab

@@ -26,6 +26,23 @@ RUN apt-get update && apt-get -y install --no-install-recommends \
 	libc6-dev \
 	libbz2-dev
 
+# Install Supervisors
+RUN apt-get install -y supervisor && \
+        sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisor/supervisord.conf
+
+# Define mountable directories.
+VOLUME ["/etc/supervisor/conf.d"]
+
+# ------------------------------------------------------------------------------
+# Security changes
+# - Determine runlevel and services at startup [BOOT-5180]
+RUN update-rc.d supervisor defaults
+
+# Define working directory.
+#WORKDIR /etc/supervisor/conf.d
+# ------------------------------------------------------------------------------
+
+
 # Compile & Install Python 3.6.7 from repository
 # References: https://github.com/docker-library/python/blob/bf1acb4f1caad419ff290d700044240b4e8cb0df/3.6/jessie/Dockerfile
 #################################################
@@ -77,10 +94,20 @@ RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
     python3.6 get-pip.py && \
     rm get-pip.py
 
+# Set Environments
+ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/usr/local/cuda/extras/CUPTI/lib64
+ENV PATH ${PATH}:/usr/local/cuda-9.0/bin
+ENV CUDA_HOME ${CUDA_HOME}:/usr/local/cuda:/usr/local/cuda-9.0
+ENV LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/local/cuda-9.0/lib64
+
 # Create Workspace
 RUN mkdir -p /data
 VOLUME [ "/data" ]
 WORKDIR /data
+
+# Add supervisord conf
+ADD cloud9.conf /etc/supervisor/conf.d/
+ADD jupyter.conf /etc/supervisor/conf.d/
 
 # Install pip package via requirements.txt
 ADD requirements.txt /data
@@ -89,44 +116,19 @@ RUN pip3 --no-cache-dir install -r requirements.txt
 # Update Config for Jupyter within PasswordMode
 COPY jupyter_notebook_config.py /root/.jupyter/
 
+# ---------------- space for cloud9 session ---------------- #
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
+	apt-get install -y nodejs
+
+RUN git clone https://github.com/c9/core.git /cloud9 && \
+	sh /cloud9/scripts/install-sdk.sh && \
+	sed -i -e 's_127.0.0.1_0.0.0.0_g' /cloud9/configs/standalone.js
+# ---------------- end of cloud9 session ---------------- #
+
 EXPOSE 8888
+EXPOSE 80
+EXPOSE 6006
 
-CMD ["bash", "-c", "source /etc/bash.bashrc && jupyter notebook --notebook-dir=/data --ip 0.0.0.0 --no-browser --allow-root"]
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
 
-# RUN apt-get update && apt-get install -y \
-# 	wget \
-# 	nano \
-# 	vim \
-# 	zip \
-# 	bzip2
-
-# #Downgrade CUDA, TF issue: https://github.com/tensorflow/tensorflow/issues/17566#issuecomment-372490062
-# RUN apt-get install --allow-downgrades --allow-change-held-packages -y libcudnn7=7.0.5.15-1+cuda9.0
-
-# #Install MINICONDA
-# RUN wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O Miniconda.sh && \
-# 	/bin/bash Miniconda.sh -b -p /opt/conda && \
-# 	rm Miniconda.sh
-
-# ENV PATH /opt/conda/bin:$PATH
-
-# #Install ANACONDA Environment
-# RUN conda create -y -n research-env \
-# 	python=3.6 \
-# 	cython \
-# 	anaconda \
-# 	cupy \
-# 	numpy \
-# 	scipy \
-# 	rtree \
-# 	shapely
-
-# RUN conda install -y pytorch torchvision cuda92 -c pytorch
-
-# RUN /opt/conda/envs/research-env/bin/pip install tensorflow-gpu==1.5.0 \
-# 	keras \
-# 	jupyter-tensorboard \
-# 	jupyterlab
-
-# #Launch JUPYTER COMMAND
-# CMD /opt/conda/envs/research-env/bin/jupyter notebook --ip=* --no-browser --allow-root --notebook-dir=/tmp
+#CMD ["bash", "-c", "source /etc/bash.bashrc && jupyter notebook --notebook-dir=/data --ip 0.0.0.0 --no-browser --allow-root", "bash", "-c", "source /etc/bash.bashrc && nodejs /cloud9/server.js --listen 0.0.0.0 --port 80 -w /data"]
