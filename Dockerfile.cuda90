@@ -24,11 +24,9 @@ RUN apt-get update && apt-get -y install --no-install-recommends \
 	libsqlite3-dev \
 	libgdbm-dev \
 	libc6-dev \
-	libbz2-dev
-
-# Install Supervisors
-RUN apt-get install -y supervisor && \
-        sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisor/supervisord.conf
+	libbz2-dev \
+	supervisor && \
+	sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisor/supervisord.conf
 
 # Define mountable directories.
 VOLUME ["/etc/supervisor/conf.d"]
@@ -105,16 +103,9 @@ RUN mkdir -p /data
 VOLUME [ "/data" ]
 WORKDIR /data
 
-# Add supervisord conf
-ADD cloud9.conf /etc/supervisor/conf.d/
-ADD jupyter.conf /etc/supervisor/conf.d/
-
 # Install pip package via requirements.txt
 ADD requirements.txt /data
 RUN pip3 --no-cache-dir install -r requirements.txt
-
-# Update Config for Jupyter within PasswordMode
-COPY jupyter_notebook_config.py /root/.jupyter/
 
 # ---------------- space for cloud9 session ---------------- #
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
@@ -124,6 +115,13 @@ RUN git clone https://github.com/c9/core.git /cloud9 && \
 	sh /cloud9/scripts/install-sdk.sh && \
 	sed -i -e 's_127.0.0.1_0.0.0.0_g' /cloud9/configs/standalone.js
 # ---------------- end of cloud9 session ---------------- #
+
+# Update Config for Jupyter within PasswordMode
+COPY jupyter_notebook_config.py /root/.jupyter/
+
+# Add supervisord conf
+ADD cloud9.conf /etc/supervisor/conf.d/
+ADD jupyter.conf /etc/supervisor/conf.d/
 
 EXPOSE 8888
 EXPOSE 80
