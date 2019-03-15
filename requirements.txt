@@ -8,10 +8,10 @@ keras
 pandas
 Pillow
 opencv-python
-bleach==1.5.0
-tensorflow-gpu==1.4.0
+bleach
+tensorflow-gpu==1.8.0
 torchvision
 jupyterlab
 tqdm
 opencv-python
-scikit-image==0.9.3
+scikit-image

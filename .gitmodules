@@ -1,0 +1,4 @@
+[submodule "cloud9-core"]
+	path = cloud9-core
+	url = https://github.com/c9/core
+	branch = master
