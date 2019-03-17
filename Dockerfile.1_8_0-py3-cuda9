@@ -27,18 +27,15 @@ RUN apt-get update && apt-get -y install --no-install-recommends \
 	libgdbm-dev \
 	libc6-dev \
 	libbz2-dev \
-	supervisor && \
+	supervisor \
+	npm \
+	nodejs-legacy \
 	tmux && \
 	sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisor/supervisord.conf
 
 # Define mountable directories.
 VOLUME ["/etc/supervisor/conf.d"]
-
-# ------------------------------------------------------------------------------
-# Security changes
-# - Determine runlevel and services at startup [BOOT-5180]
 RUN update-rc.d supervisor defaults
-# ------------------------------------------------------------------------------
 
 RUN cd /usr/src && \
 	wget https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tgz && \
@@ -67,27 +64,24 @@ ADD requirements.txt /data
 RUN pip3 --no-cache-dir install -r requirements.txt
 
 # ---------------- space for cloud9 session ---------------- #
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
-	apt-get install -y nodejs
+#RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
+#	apt-get install -y nodejs
 
-ADD cloud9-core /cloud9-core
+RUN git clone https://github.com/c9/core.git /cloud9 && \
+	sh /cloud9/scripts/install-sdk.sh && \
+	sed -i -e 's_127.0.0.1_0.0.0.0_g' /cloud9/configs/standalone.js
 
-RUN	cd /cloud9-core/scripts && \
-	./install-sdk.sh && \
-	sed -i -e 's_127.0.0.1_0.0.0.0_g' /cloud9-core/configs/standalone.js
 # ---------------- end of cloud9 session ---------------- #
 
 # Update Config for Jupyter within PasswordMode
-COPY jupyter_notebook_config.py /root/.jupyter/
+COPY ./config/jupyter_notebook_config.py /root/.jupyter/
 
 # Add supervisord conf
-ADD cloud9.conf /etc/supervisor/conf.d/
-ADD jupyter.conf /etc/supervisor/conf.d/
+ADD ./config/cloud9.conf /etc/supervisor/conf.d/
+ADD ./config/jupyter.conf /etc/supervisor/conf.d/
 
 EXPOSE 8888
 EXPOSE 80
 EXPOSE 6006
 
 CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
-
-#CMD ["bash", "-c", "source /etc/bash.bashrc && jupyter notebook --notebook-dir=/data --ip 0.0.0.0 --no-browser --allow-root", "bash", "-c", "source /etc/bash.bashrc && nodejs /cloud9/server.js --listen 0.0.0.0 --port 80 -w /data"]
