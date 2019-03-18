@@ -41,15 +41,35 @@ $ docker run -d --name docker-research -p 80:80 -p 6006:6006 -p 8888:8888 myname
 ```
 
 ### via Docker-Compose
+You could create new file name *docker-compose.yml* and copy example of compose file here. So you can change some parameter as you want.
 ```
-We'll updated as soon as posible.
+version: '2.3'    # fix this version to use docker-compose with nvidia runtime
+
+services:
+  docker-research:
+    container_name: docker-research-1
+    runtime: nvidia
+    image: mynameismaxz/docker-deeplearning:latest
+    ports:
+      - 80:80             #cloud9 ide
+      - 8888:8888         #jupyter
+      - 6006:6006         #tensorboard (opt)
+    volumes:
+      - /path/to/your/data:/data
+    environment:
+      - PASSWORD=as-you-want    #set your password here
+```
+
+And then you can start docker compose file with command
+```
+$ docker-compose up -d
 ```
 
 ## Environment Parameters
-Todo: update this article.
+1. PASSWORD , The password environment when you want to set authenticate to cloud9, jupyter. If you don't fill this parameter will be no password to enter them.
 
 ## Contribution
-Todo: update this article.
+If you have any suggestion, feedback, comments, Please don't hesitate to comment us. We'll improve from your comments. XD 
 
 ## License
 MIT
