@@ -37,7 +37,7 @@ So you can create Docker-Compose to run this image or create by docker command. 
 
 ### via docker run
 ```
-$ docker run -d --name docker-research -p 80:80 -p 6006:6006 -p 8888:8888 mynameismaxz/codia-research-docker:latest
+$ docker run -d --name docker-research -v /path/to/your/data:/data -e PASSWORD=as-you-want -p 80:80 -p 6006:6006 -p 8888:8888 mynameismaxz/codia-research-docker:latest
 ```
 
 ### via Docker-Compose
@@ -49,7 +49,7 @@ services:
   docker-research:
     container_name: docker-research-1
     runtime: nvidia
-    image: mynameismaxz/docker-deeplearning:latest
+    image: mynameismaxz/mynameismaxz/codia-research-docker:latest
     ports:
       - 80:80             #cloud9 ide
       - 8888:8888         #jupyter
@@ -64,6 +64,7 @@ And then you can start docker compose file with command
 ```
 $ docker-compose up -d
 ```
+**Note:** If you have authenticate with PASSWORD environment, the default username is **"admin"**.
 
 ## Environment Parameters
 1. PASSWORD , The password environment when you want to set authenticate to cloud9, jupyter. If you don't fill this parameter will be no password to enter them.
