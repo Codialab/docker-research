@@ -4,14 +4,11 @@ matplotlib
 numpy
 scipy
 sklearn
-keras
 pandas
 Pillow
 opencv-python
 bleach
-tensorflow-gpu==1.8.0
-torchvision
+tensorflow-gpu==2.0.0-alpha0
 jupyterlab
 tqdm
-opencv-python
 scikit-image

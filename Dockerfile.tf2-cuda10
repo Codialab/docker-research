@@ -1,0 +1,80 @@
+FROM nvidia/cuda:10.0-cudnn7-runtime-ubuntu16.04
+
+# Install Essential Package
+RUN apt-get update && apt-get -y install --no-install-recommends \
+	build-essential \
+	ffmpeg \
+	g++ \
+	curl \
+	git \
+	wget \
+	sshfs \
+	unzip \
+	vim \
+	pkg-config \
+	rsync \
+	software-properties-common \
+	tk-dev \
+	libreadline-gplv2-dev \
+	libncursesw5-dev \
+	libssl-dev \
+	libsqlite3-dev \
+	libgdbm-dev \
+	libc6-dev \
+	libbz2-dev \
+	supervisor \
+	npm \
+	nodejs-legacy \
+	tmux && \
+	sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisor/supervisord.conf
+
+# Define mountable directories.
+VOLUME ["/etc/supervisor/conf.d"]
+RUN update-rc.d supervisor defaults
+
+RUN cd /usr/src && \
+	wget https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tgz && \
+	tar xzf Python-3.5.2.tgz && \
+	cd Python-3.5.2 && ./configure && make altinstall
+
+RUN ls -la /usr/local/bin | grep python
+
+# make some useful symlinks that are expected to exist
+RUN cd /usr/local/bin \
+	&& ln -s python3.5 python \
+	&& ln -s python3.5-config python-config
+
+# Install Python-Installation-Package (PIP)
+RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
+    python get-pip.py && \
+    rm get-pip.py
+
+# Create Workspace
+RUN mkdir -p /data
+VOLUME [ "/data" ]
+WORKDIR /data
+
+# Install pip package via requirements.txt
+ADD requirements.txt /data
+RUN pip3 --no-cache-dir install -r requirements.txt
+
+# ---------------- space for cloud9 session ---------------- #
+
+RUN git clone https://github.com/c9/core.git /cloud9 && \
+	sh /cloud9/scripts/install-sdk.sh && \
+	sed -i -e 's_127.0.0.1_0.0.0.0_g' /cloud9/configs/standalone.js
+
+# ---------------- end of cloud9 session ---------------- #
+
+# Update Config for Jupyter within PasswordMode
+COPY ./config/jupyter_notebook_config.py /root/.jupyter/
+
+# Add supervisord conf
+ADD ./config/cloud9.conf /etc/supervisor/conf.d/
+ADD ./config/jupyter.conf /etc/supervisor/conf.d/
+
+EXPOSE 8888
+EXPOSE 80
+EXPOSE 6006
+
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
