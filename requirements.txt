@@ -8,7 +8,6 @@ pandas
 Pillow
 opencv-python
 bleach
-tensorflow-gpu==2.0.0-alpha0
 jupyterlab
 tqdm
 scikit-image

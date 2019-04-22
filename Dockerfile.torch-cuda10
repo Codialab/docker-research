@@ -3,7 +3,6 @@ FROM nvidia/cuda:10.0-cudnn7-runtime-ubuntu16.04
 # Install Essential Package
 RUN apt-get update && apt-get -y install --no-install-recommends \
 	build-essential \
-	ffmpeg \
 	g++ \
 	curl \
 	git \
@@ -23,6 +22,8 @@ RUN apt-get update && apt-get -y install --no-install-recommends \
 	libc6-dev \
 	libbz2-dev \
 	supervisor \
+	npm \
+	nodejs-legacy \
 	tmux && \
 	sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisor/supervisord.conf
 
@@ -56,17 +57,18 @@ WORKDIR /data
 ADD requirements.txt /data
 RUN pip3 --no-cache-dir install -r requirements.txt
 
+# Install 3rd party deeplearning framework (tensorflow, pytorch bla bla bla..)
+RUN pip3 install https://download.pytorch.org/whl/cu100/torch-1.0.1.post2-cp35-cp35m-linux_x86_64.whl && pip3 install torchvision
+
 # ---------------- space for cloud9 session ---------------- #
+#RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
+#	apt-get install -y nodejs
 
 RUN git clone https://github.com/c9/core.git /cloud9 && \
 	sh /cloud9/scripts/install-sdk.sh && \
 	sed -i -e 's_127.0.0.1_0.0.0.0_g' /cloud9/configs/standalone.js
 
 # ---------------- end of cloud9 session ---------------- #
-
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
-	apt install -y nodejs && \
-	nodejs --version
 
 # Update Config for Jupyter within PasswordMode
 COPY ./config/jupyter_notebook_config.py /root/.jupyter/
